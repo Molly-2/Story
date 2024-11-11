@@ -15,7 +15,11 @@ const POSTS_FILE = './posts.json';
 // Load posts from file
 let posts = [];
 if (fs.existsSync(POSTS_FILE)) {
-    posts = JSON.parse(fs.readFileSync(POSTS_FILE, 'utf8'));
+    try {
+        posts = JSON.parse(fs.readFileSync(POSTS_FILE, 'utf8'));
+    } catch (error) {
+        console.error('Error reading posts file:', error);
+    }
 }
 
 // Middleware to serve HTML file and handle form data
@@ -29,8 +33,13 @@ app.post('/post', (req, res) => {
     posts.push(newPost);
 
     // Save updated posts to file
-    fs.writeFileSync(POSTS_FILE, JSON.stringify(posts, null, 2));
-    
+    try {
+        fs.writeFileSync(POSTS_FILE, JSON.stringify(posts, null, 2));
+    } catch (error) {
+        console.error('Error writing posts file:', error);
+        return res.status(500).send('Internal Server Error');
+    }
+
     // Emit the new post to all connected clients
     io.emit('new_post', newPost);
 
