@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Stories</title>
+    <style>
+        /* Embedded CSS */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .form, .search-form {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .form input, .form textarea, .form button, .search-form input {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .form button {
+            background-color: #28a745;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .form button:hover {
+            background-color: #218838;
+        }
+        .posts .post {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .post h2 {
+            margin: 0;
+            color: #333;
+        }
+        .post .content {
+            margin: 10px 0;
+            color: #555;
+        }
+        .post .meta {
+            font-size: 0.9em;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Share Your Story</h1>
+
+        <!-- Post Submission Form -->
+        <form action="/post" method="POST" class="form">
+            <input type="text" name="name" placeholder="Your Name" required>
+            <input type="text" name="title" placeholder="Title" required>
+            <textarea name="content" placeholder="Your Story or Lyrics" rows="4" required></textarea>
+            <button type="submit">Post</button>
+        </form>
+
+        <!-- Search Form -->
+        <form class="search-form" onsubmit="searchPosts(event)">
+            <input type="text" id="search" placeholder="Search posts by keyword...">
+            <button type="submit">Search</button>
+        </form>
+
+        <div id="posts" class="posts">
+            <!-- Stories will be dynamically loaded here -->
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        // Fetch and display posts (with optional search)
+        async function loadPosts(query = '') {
+            const response = await fetch(`/posts?search=${encodeURIComponent(query)}`);
+            const posts = await response.json();
+            displayPosts(posts);
+        }
+
+        function displayPosts(posts) {
+            const postsContainer = document.getElementById('posts');
+            postsContainer.innerHTML = '';
+
+            if (posts.length === 0) {
+                postsContainer.innerHTML = '<p>No posts found.</p>';
+                return;
+            }
+
+            posts.forEach(post => addPostToPage(post));
+        }
+
+        function addPostToPage(post) {
+            const postElement = document.createElement('div');
+            postElement.classList.add('post');
+            postElement.innerHTML = `
+                <h2>${post.title}</h2>
+                <p class="content">${post.content}</p>
+                <p class="meta">Posted by <strong>${post.name}</strong> on ${post.date}</p>
+            `;
+            document.getElementById('posts').prepend(postElement);
+        }
+
+        // Listen for new posts via Socket.IO and add them to the page
+        socket.on('new_post', (post) => {
+            addPostToPage(post);
+        });
+
+        // Search form submission handler
+        function searchPosts(event) {
+            event.preventDefault();
+            const searchQuery = document.getElementById('search').value;
+            loadPosts(searchQuery);
+        }
+
+        // Load all posts on page load
+        window.onload = () => loadPosts();
+    </script>
+</body>
+</html>
